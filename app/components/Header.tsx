@@ -85,9 +85,19 @@ function MobileNavItem({
 function MobileNavigation(props: any) {
   return (
     <Popover {...props}>
-      <Popover.Button className="group flex items-center rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20">
-        Menu
+      <Popover.Button className="group flex items-center bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 relative text-zinc-900/10 dark:text-white/10">
+        <span className="text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-400">
+          Menu
+        </span>
         <ChevronDownIcon className="ml-3 h-auto w-2 stroke-zinc-500 group-hover:stroke-zinc-700 dark:group-hover:stroke-zinc-400" />
+        <IowaLeft
+          className="h-[42px] absolute -top-[1px] -left-[10px] fill-white/90 dark:fill-zinc-800/90"
+          aria-hidden="true"
+        />
+        <IowaRight
+          className="h-[45px] absolute -right-[20px] -top-[1px] fill-white/90 dark:fill-zinc-800/90"
+          aria-hidden="true"
+        />
       </Popover.Button>
       <Transition.Root>
         <Transition.Child
@@ -450,7 +460,7 @@ export function Header() {
                 )}
               </div>
               <div className="flex flex-1 justify-end md:justify-center">
-                <MobileNavigation className="pointer-events-auto md:hidden" />
+                <MobileNavigation className="pointer-events-auto md:hidden mr-4" />
                 <DesktopNavigation className="pointer-events-auto hidden md:block" />
               </div>
               <div className="flex justify-end md:flex-1">
