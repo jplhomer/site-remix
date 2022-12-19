@@ -5,6 +5,7 @@ function NavLink({ href, children }: { href: string; children: string }) {
   return (
     <Link
       to={href}
+      prefetch="intent"
       className="transition hover:text-teal-500 dark:hover:text-teal-400"
     >
       {children}

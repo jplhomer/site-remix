@@ -5,7 +5,7 @@ import { Fragment, useEffect, useRef } from "react";
 import { Link, NavLink, useLocation } from "@remix-run/react";
 import { Container } from "~/components/Container";
 
-function CloseIcon(props) {
+function CloseIcon(props: React.ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
       <path
@@ -20,7 +20,7 @@ function CloseIcon(props) {
   );
 }
 
-function ChevronDownIcon(props) {
+function ChevronDownIcon(props: React.ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 8 6" aria-hidden="true" {...props}>
       <path
@@ -34,7 +34,7 @@ function ChevronDownIcon(props) {
   );
 }
 
-function SunIcon(props) {
+function SunIcon(props: React.ComponentProps<"svg">) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -53,7 +53,7 @@ function SunIcon(props) {
   );
 }
 
-function MoonIcon(props) {
+function MoonIcon(props: React.ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
       <path
@@ -82,7 +82,7 @@ function MobileNavItem({
   );
 }
 
-function MobileNavigation(props) {
+function MobileNavigation(props: any) {
   return (
     <Popover {...props}>
       <Popover.Button className="group flex items-center rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20">
@@ -149,6 +149,7 @@ function NavItem({
     <li>
       <NavLink
         to={href}
+        prefetch="intent"
         className={({ isActive }) =>
           clsx(
             "relative block px-3 py-2 transition",
@@ -171,16 +172,33 @@ function NavItem({
   );
 }
 
-function DesktopNavigation(props) {
+function DesktopNavigation({
+  className,
+  ...props
+}: { className?: string } & React.ComponentProps<"nav">) {
   return (
-    <nav {...props}>
-      <ul className="flex rounded-full bg-white/90 px-3 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10">
+    <nav
+      className={clsx(
+        className,
+        "text-zinc-900/10 border-y border-zinc-900/10 dark:border-white/10 dark:text-white/10 relative"
+      )}
+      {...props}
+    >
+      <ul className="flex bg-white/90 px-3 text-sm font-medium shadow-zinc-800/5 backdrop-blur dark:bg-zinc-800/90 text-zinc-800 dark:text-zinc-200">
         <NavItem href="/about">About</NavItem>
         <NavItem href="/articles">Articles</NavItem>
         <NavItem href="/projects">Projects</NavItem>
         <NavItem href="/speaking">Speaking</NavItem>
         <NavItem href="/uses">Uses</NavItem>
       </ul>
+      <IowaLeft
+        className="h-[42px] border-t border-t-current absolute -top-[1px] -left-[10px]"
+        aria-hidden="true"
+      />
+      <IowaRight
+        className="h-[45px] absolute -right-[20px] -top-[1px]"
+        aria-hidden="true"
+      />
     </nav>
   );
 }
@@ -249,6 +267,7 @@ function Avatar({
   return (
     <Link
       to="/"
+      prefetch="intent"
       aria-label="Home"
       className={clsx(className, "pointer-events-auto")}
       {...props}
@@ -278,7 +297,7 @@ export function Header() {
     let upDelay = 64;
 
     function setProperty(property: string, value: string | number) {
-      document.documentElement.style.setProperty(property, value);
+      document.documentElement.style.setProperty(property, value + "");
     }
 
     function removeProperty(property: string) {
@@ -286,7 +305,10 @@ export function Header() {
     }
 
     function updateHeaderStyles() {
-      let { top, height } = headerRef.current.getBoundingClientRect();
+      let { top, height } = headerRef.current?.getBoundingClientRect() ?? {
+        top: 0,
+        height: 0,
+      };
       let scrollY = clamp(
         window.scrollY,
         0,
@@ -442,5 +464,39 @@ export function Header() {
       </header>
       {isHomePage && <div style={{ height: "var(--content-offset)" }} />}
     </>
+  );
+}
+
+function IowaLeft(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 76 307"
+      {...props}
+    >
+      <path
+        d="M74.898 305.824c-2.089-.64-5.588-3.035-7.586-5.192-.97-1.048-2.147-2.789-2.865-4.239-1.877-3.787-1.875-4.01.16-17.943.874-5.988.823-6.895-.654-11.662-.85-2.74-1.086-4.146-1.448-8.6-.374-4.61-.599-5.9-1.675-9.613-1.157-3.993-1.236-4.493-1.141-7.247.264-7.706-.043-9.811-2.129-14.565-.554-1.262-1.213-3.311-1.465-4.552-.684-3.365-2.222-6.24-4.981-9.308-4.324-4.808-5.06-6.227-7.56-14.548-1.612-5.365-1.66-5.63-1.569-8.495.2-6.241.1-7.593-.854-11.578a139.967 139.967 0 0 1-1.55-7.534c-1-5.894-2.195-8.533-5.887-13.008a7921.793 7921.793 0 0 0-5.41-6.547c-4.705-5.687-5.307-7.031-6.266-13.985-.427-3.095-.565-3.485-2.816-7.987-2.714-5.429-3.244-7.321-3.25-11.601-.004-2.709-.124-3.385-1.153-6.508-1.554-4.718-5.475-12.561-8.026-16.055C1.128 87.326.734 86.474.759 82.041c.016-3.02.07-3.265 1.953-8.874a642.2 642.2 0 0 1 2.992-8.727c.715-2.004 1.158-3.915 1.372-5.916.64-5.988.76-6.465 2.762-10.842 2.509-5.488 2.67-6.217 2.09-9.434-.497-2.746-.643-3.037-4.025-8.02-3.775-5.562-4.288-7.267-3.313-11.001.654-2.501.616-4.108-.157-6.663-.497-1.641-.975-2.521-1.926-3.55C1.356 7.773 1.22 7.464 1.008 5.58.88 4.439.761 2.909.744 2.177L.714.846"
+        strokeWidth="10"
+        className="stroke-current"
+      />
+    </svg>
+  );
+}
+
+function IowaRight(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 146 327"
+      {...props}
+    >
+      <path
+        d="M.151 306.117c4.78-.285 9.106-.45 9.613-.365.508.084 2.376.716 4.152 1.404l3.229 1.251 3.686 3.583c2.028 1.97 4.676 4.809 5.884 6.308 1.207 1.498 3.276 3.728 4.595 4.954h-.012c2.227 2.069 2.493 2.23 3.691 2.23 1.636 0 3.224-.659 4.452-1.848.819-.792.962-1.139.962-2.333 0-.772-.213-2.309-.473-3.418-.612-2.606-.43-5.423.46-7.169 1.454-2.846 5.158-5.888 8.676-7.124.857-.301 2.805-.764 4.33-1.029 3.304-.573 4.63-1.2 6.72-3.177 2.234-2.112 3.228-3.825 3.907-6.736.322-1.383.853-3.67 1.178-5.084.85-3.683 2.606-6.978 6.146-11.53 5.083-6.537 6.194-9.172 6.148-14.592-.055-6.484-1.355-10.107-5.307-14.79-4.958-5.875-6.012-8.189-5.443-11.946.375-2.475 2.039-8.723 2.805-10.535.674-1.596 4.343-5.135 6.35-6.127 1.45-.716 2.502-.898 9.759-1.678 4.474-.481 9.199-.96 10.5-1.065 2.935-.236 6.628-1.078 9.051-2.063 1.012-.411 5.114-2.574 9.114-4.807 6.927-3.866 7.401-4.187 9.936-6.731 1.464-1.469 3.013-3.337 3.442-4.15.429-.813 1.208-3.139 1.73-5.169.523-2.029 1.331-4.443 1.796-5.365 1.042-2.065 3.746-5.446 6.241-7.805 3.446-3.259 5.354-6.172 6.103-9.318.587-2.465 1.033-9.514.825-13.013-.445-7.445-.809-8.707-3.457-11.982-1.753-2.168-3.029-3.168-7.163-5.612-6.526-3.858-8.301-5.763-11.587-12.431-2.653-5.383-4.009-7.027-9.776-11.85-2.269-1.897-4.842-4.267-5.718-5.265-1.89-2.156-4.546-6.12-5.411-8.076-2.061-4.66-5.924-9.553-9.321-11.807-.898-.596-3.409-1.664-5.928-2.522-2.404-.818-6.375-2.462-8.826-3.655-3.855-1.875-4.735-2.44-6.537-4.195-3.587-3.494-3.865-4.085-7.027-14.95-1.547-5.317-3.345-11.307-3.994-13.31-1.909-5.892-2.115-8.401-1.015-12.35.51-1.826 2.42-5.762 3.71-7.642.478-.695 1.278-2.14 1.78-3.213.761-1.626.93-2.389 1.015-4.6l.102-2.649-3.518-4.934c-1.934-2.714-4.018-5.866-4.63-7.005-.612-1.139-1.3-2.29-1.53-2.56-.229-.27-.618-1.264-.865-2.21-.247-.947-.64-2.09-.874-2.543l-.425-.821H.15"
+        strokeWidth="10"
+        className="stroke-current"
+      />
+    </svg>
   );
 }
