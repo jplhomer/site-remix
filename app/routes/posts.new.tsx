@@ -2,6 +2,7 @@ import type { ActionArgs } from "@remix-run/cloudflare";
 import { json, redirect } from "@remix-run/cloudflare";
 import { Form, useActionData } from "@remix-run/react";
 import { TextareaMarkdown } from "textarea-markdown-editor/dist/TextareaMarkdown";
+import { Label } from "~/components/Form";
 import { SimpleLayout } from "~/components/SimpleLayout";
 
 export async function action({ request, context: { DB } }: ActionArgs) {
@@ -9,6 +10,7 @@ export async function action({ request, context: { DB } }: ActionArgs) {
   const title = form.get("title");
   const content = form.get("content");
   const description = form.get("description");
+  const createdAt = form.get("created_at");
 
   if (!title) {
     return json(
@@ -24,10 +26,19 @@ export async function action({ request, context: { DB } }: ActionArgs) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+  const fields = ["title", "content", "slug", "status", "description"];
+  const bindings = [title, content, slug, "draft", description];
+  if (createdAt) {
+    fields.push("created_at");
+    bindings.push(createdAt);
+  }
+
   await DB.prepare(
-    "INSERT INTO posts (title, content, slug, status, description) VALUES (?1, ?2, ?3, ?4, ?5)"
+    `INSERT INTO posts (${fields.join(", ")}) VALUES (${fields
+      .map(() => "?")
+      .join(", ")})`
   )
-    .bind(title, content, slug, "draft", description)
+    .bind(...bindings)
     .run();
 
   return redirect(`/posts/${slug}`);
@@ -39,9 +50,7 @@ export default function NewPost() {
   return (
     <SimpleLayout title="New Post" intro="Create a new post">
       <Form method="post">
-        <label htmlFor="title" className="block font-bold mb-2">
-          Title
-        </label>
+        <Label htmlFor="title">Title</Label>
         <input
           type="text"
           name="title"
@@ -50,9 +59,7 @@ export default function NewPost() {
           required
         />
 
-        <label htmlFor="content" className="block font-bold mb-2 mt-4">
-          Content
-        </label>
+        <Label htmlFor="content">Content (optional)</Label>
         <TextareaMarkdown
           name="content"
           id="content"
@@ -61,18 +68,26 @@ export default function NewPost() {
           rows={20}
         />
 
-        <label htmlFor="description" className="block font-bold mb-2 mt-4">
-          Meta Description
-        </label>
+        <Label htmlFor="description">Meta Description (optional)</Label>
         <textarea
           name="description"
           id="description"
           className="font-mono w-full"
           cols={80}
         ></textarea>
+
+        <Label htmlFor="created_at">Date (optional)</Label>
+        <input
+          type="date"
+          name="created_at"
+          id="created_at"
+          className="w-full"
+        />
+
         {actionData?.error && (
           <div className="text-red-500 font-bold mt-4">{actionData.error}</div>
         )}
+
         <div className="text-right">
           <button
             type="submit"
