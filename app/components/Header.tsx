@@ -135,7 +135,7 @@ function MobileNavigation(props: any) {
             <nav className="mt-6">
               <ul className="-my-2 divide-y divide-zinc-100 text-base text-zinc-800 dark:divide-zinc-100/5 dark:text-zinc-300">
                 <MobileNavItem href="/about">About</MobileNavItem>
-                <MobileNavItem href="/articles">Articles</MobileNavItem>
+                <MobileNavItem href="/posts">Posts</MobileNavItem>
                 <MobileNavItem href="/projects">Projects</MobileNavItem>
                 <MobileNavItem href="/speaking">Speaking</MobileNavItem>
                 <MobileNavItem href="/uses">Uses</MobileNavItem>
@@ -196,7 +196,7 @@ function DesktopNavigation({
     >
       <ul className="flex bg-white/90 px-3 text-sm font-medium shadow-zinc-800/5 dark:bg-zinc-800/90 text-zinc-800 dark:text-zinc-200">
         <NavItem href="/about">About</NavItem>
-        <NavItem href="/articles">Articles</NavItem>
+        <NavItem href="/posts">Posts</NavItem>
         <NavItem href="/projects">Projects</NavItem>
         <NavItem href="/speaking">Speaking</NavItem>
         <NavItem href="/uses">Uses</NavItem>

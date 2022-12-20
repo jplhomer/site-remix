@@ -12,7 +12,8 @@
     "generate:css": "npx tailwindcss -o ./app/tailwind.css",
     "start": "cross-env NODE_ENV=production npm run wrangler",
     "typecheck": "tsc -b",
-    "wrangler": "wrangler pages dev ./public --d1=DB --local --persist"
+    "wrangler": "wrangler pages dev ./public --d1=DB --local --persist",
+    "db:migrate:fresh": "rm .wrangler/state/d1/DB.sqlite3 && npx wrangler d1 migrations apply site-articles --local -y"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.7",
@@ -23,6 +24,7 @@
     "@tailwindcss/typography": "^0.5.8",
     "clsx": "^1.2.1",
     "cross-env": "^7.0.3",
+    "marked": "^4.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwindcss": "^3.2.4"
@@ -31,6 +33,7 @@
     "@cloudflare/workers-types": "^3.18.0",
     "@remix-run/dev": "^1.9.0",
     "@remix-run/eslint-config": "^1.9.0",
+    "@types/marked": "^4.0.8",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.9",
     "better-sqlite3": "7.6.2",
