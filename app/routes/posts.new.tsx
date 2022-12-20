@@ -1,6 +1,7 @@
 import type { ActionArgs } from "@remix-run/cloudflare";
 import { json, redirect } from "@remix-run/cloudflare";
 import { Form, useActionData } from "@remix-run/react";
+import { TextareaMarkdown } from "textarea-markdown-editor/dist/TextareaMarkdown";
 import { SimpleLayout } from "~/components/SimpleLayout";
 
 export async function action({ request, context: { DB } }: ActionArgs) {
@@ -52,13 +53,13 @@ export default function NewPost() {
         <label htmlFor="content" className="block font-bold mb-2 mt-4">
           Content
         </label>
-        <textarea
+        <TextareaMarkdown
           name="content"
           id="content"
           className="font-mono w-full"
           cols={80}
           rows={20}
-        ></textarea>
+        />
 
         <label htmlFor="description" className="block font-bold mb-2 mt-4">
           Meta Description
