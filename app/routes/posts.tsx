@@ -8,7 +8,7 @@ import { type Post } from "./posts.$slug";
 
 export async function loader({ context: { DB } }: LoaderArgs) {
   const posts = await DB.prepare(
-    "SELECT * FROM posts ORDER BY created_at DESC"
+    "SELECT * FROM posts WHERE status = 'published' ORDER BY created_at DESC"
   ).all<Post>();
 
   invariant(posts.results, "Something went wrong when querying posts.");
