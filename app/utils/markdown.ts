@@ -8,6 +8,9 @@ export async function convertToHtml(input: string) {
     headerIds: false,
     smartLists: true,
     smartypants: true,
-    highlight: (code, lang, callback) => hljs.highlight(lang, code).value,
+    highlight: (code, lang) =>
+      hljs.highlight(code, {
+        language: lang,
+      }).value,
   });
 }
