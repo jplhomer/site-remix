@@ -34,14 +34,14 @@ export class AuthService {
       return false;
     }
 
-    return this.login({ id: row.id, email: row.email }, redirectTo);
+    return await this.login({ id: row.id, email: row.email }, redirectTo);
   }
 
   async login(user: User, redirectTo = "/") {
     const session = await this.getSession();
     session.set(SESSION_KEY, user.id);
 
-    return redirect(redirectTo, {
+    throw redirect(redirectTo, {
       headers: {
         "set-cookie": await this.sessionStorage.commitSession(session),
       },
@@ -52,8 +52,14 @@ export class AuthService {
     return !!(await this.id());
   }
 
-  async logout() {
-    return await this.sessionStorage.destroySession(await this.getSession());
+  async logout(redirectTo = "/") {
+    throw redirect(redirectTo, {
+      headers: {
+        "set-cookie": await this.sessionStorage.destroySession(
+          await this.getSession()
+        ),
+      },
+    });
   }
 
   async id() {

@@ -1,4 +1,9 @@
-import type { LinksFunction, MetaFunction } from "@remix-run/cloudflare";
+import {
+  json,
+  type LinksFunction,
+  type LoaderArgs,
+  type MetaFunction,
+} from "@remix-run/cloudflare";
 import {
   Links,
   LiveReload,
@@ -6,6 +11,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
 import { Layout } from "./components/Layout";
 import styles from "./tailwind.css";
@@ -57,7 +63,15 @@ const modeScript = `
   }
 `;
 
+export async function loader({ context: { auth } }: LoaderArgs) {
+  return json({
+    isLoggedIn: await auth.check(),
+  });
+}
+
 export default function App() {
+  const { isLoggedIn } = useLoaderData<typeof loader>();
+
   return (
     <html className="h-full antialiased" lang="en">
       <head>
@@ -66,7 +80,7 @@ export default function App() {
         <script dangerouslySetInnerHTML={{ __html: modeScript }} />
       </head>
       <body className="flex h-full flex-col bg-zinc-50 dark:bg-black dark:text-zinc-100">
-        <Layout>
+        <Layout isLoggedIn={isLoggedIn}>
           <Outlet />
         </Layout>
         <ScrollRestoration />

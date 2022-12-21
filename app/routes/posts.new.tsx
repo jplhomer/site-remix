@@ -7,7 +7,7 @@ import { SimpleLayout } from "~/components/SimpleLayout";
 
 export async function loader({ request, context: { auth } }: LoaderArgs) {
   if (!(await auth.check())) {
-    return redirect("/login");
+    return redirect("/auth/login");
   }
 
   return {};

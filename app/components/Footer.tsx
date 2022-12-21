@@ -1,5 +1,6 @@
 import { Link } from "@remix-run/react";
 import { Container } from "~/components/Container";
+import { LogOutButton } from "~/routes/auth";
 
 function NavLink({ href, children }: { href: string; children: string }) {
   return (
@@ -13,7 +14,7 @@ function NavLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-export function Footer() {
+export function Footer({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
     <footer className="mt-32">
       <Container.Outer>
@@ -25,6 +26,11 @@ export function Footer() {
                 <NavLink href="/projects">Projects</NavLink>
                 <NavLink href="/speaking">Speaking</NavLink>
                 <NavLink href="/uses">Uses</NavLink>
+                {isLoggedIn && (
+                  <LogOutButton className="transition hover:text-teal-500 dark:hover:text-teal-400">
+                    Log out
+                  </LogOutButton>
+                )}
               </div>
               <p className="text-sm text-zinc-400 dark:text-zinc-500">
                 &copy; {new Date().getFullYear()} Josh Larson. All rights

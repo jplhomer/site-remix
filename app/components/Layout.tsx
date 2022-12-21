@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 import { Header } from "~/components/Header";
 import { Footer } from "~/components/Footer";
 
-export function Layout({ children }: { children: ReactNode }) {
+export function Layout({
+  children,
+  isLoggedIn,
+}: {
+  children: ReactNode;
+  isLoggedIn: boolean;
+}) {
   return (
     <>
       <div className="fixed inset-0 flex justify-center sm:px-8">
@@ -13,7 +19,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="relative">
         <Header />
         <main>{children}</main>
-        <Footer />
+        <Footer isLoggedIn={isLoggedIn} />
       </div>
     </>
   );
