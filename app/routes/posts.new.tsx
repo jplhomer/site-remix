@@ -1,16 +1,25 @@
-import type { ActionArgs } from "@remix-run/cloudflare";
+import type { ActionArgs, LoaderArgs } from "@remix-run/cloudflare";
 import { json, redirect } from "@remix-run/cloudflare";
 import { Form, useActionData } from "@remix-run/react";
 import { TextareaMarkdown } from "textarea-markdown-editor/dist/TextareaMarkdown";
-import { Label } from "~/components/Form";
+import { Button, Input, Label, ValidationError } from "~/components/Form";
 import { SimpleLayout } from "~/components/SimpleLayout";
 
-export async function action({ request, context: { DB } }: ActionArgs) {
+export async function loader({ request, context: { auth } }: LoaderArgs) {
+  if (!(await auth.check())) {
+    return redirect("/login");
+  }
+
+  return {};
+}
+
+export async function action({ request, context: { DB, auth } }: ActionArgs) {
   const form = new URLSearchParams(await request.text());
   const title = form.get("title");
   const content = form.get("content");
   const description = form.get("description");
   const createdAt = form.get("created_at");
+  const userId = await auth.id();
 
   if (!title) {
     return json(
@@ -26,8 +35,15 @@ export async function action({ request, context: { DB } }: ActionArgs) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  const fields = ["title", "content", "slug", "status", "description"];
-  const bindings = [title, content, slug, "draft", description];
+  const fields = [
+    "title",
+    "content",
+    "slug",
+    "status",
+    "description",
+    "user_id",
+  ];
+  const bindings = [title, content, slug, "draft", description, userId];
   if (createdAt) {
     fields.push("created_at");
     bindings.push(createdAt);
@@ -51,7 +67,7 @@ export default function NewPost() {
     <SimpleLayout title="New Post" intro="Create a new post">
       <Form method="post">
         <Label htmlFor="title">Title</Label>
-        <input
+        <Input
           type="text"
           name="title"
           id="title"
@@ -63,21 +79,22 @@ export default function NewPost() {
         <TextareaMarkdown
           name="content"
           id="content"
-          className="font-mono w-full"
+          className="font-mono w-full dark:bg-zinc-800"
           cols={80}
           rows={20}
         />
 
         <Label htmlFor="description">Meta Description (optional)</Label>
-        <textarea
+        <Input
+          as="textarea"
           name="description"
           id="description"
           className="font-mono w-full"
           cols={80}
-        ></textarea>
+        />
 
         <Label htmlFor="created_at">Date (optional)</Label>
-        <input
+        <Input
           type="date"
           name="created_at"
           id="created_at"
@@ -85,16 +102,11 @@ export default function NewPost() {
         />
 
         {actionData?.error && (
-          <div className="text-red-500 font-bold mt-4">{actionData.error}</div>
+          <ValidationError>{actionData.error}</ValidationError>
         )}
 
         <div className="text-right">
-          <button
-            type="submit"
-            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-          >
-            Create Post
-          </button>
+          <Button type="submit">Create Post</Button>
         </div>
       </Form>
     </SimpleLayout>
