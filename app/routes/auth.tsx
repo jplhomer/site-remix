@@ -7,7 +7,6 @@ import {
 import { Form } from "@remix-run/react";
 import bcrypt from "bcryptjs";
 import React from "react";
-import invariant from "tiny-invariant";
 
 export async function loader({ context: { auth } }: LoaderArgs) {
   if (await auth.check()) {
@@ -58,19 +57,36 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
         );
       }
 
+      const existingUser = await DB.prepare(
+        `SELECT id FROM users WHERE email = ?`
+      )
+        .bind(email)
+        .first<{ id: number }>();
+
+      if (existingUser) {
+        return json(
+          {
+            error:
+              "A user is registered with that email address. Did you mean to log in?",
+          },
+          { status: 400 }
+        );
+      }
+
       try {
-        const result = await DB.prepare(
-          `INSERT INTO users (email, password) VALUES (?, ?)`
-        )
+        await DB.prepare(`INSERT INTO users (email, password) VALUES (?, ?)`)
           .bind(email, await bcrypt.hash(password, 10))
           .run();
 
-        const userId = result.lastRowId;
-
-        invariant(userId, "Failed to create user");
+        /**
+         * TODO: Is there a way to get the lastRowId? Works locally but not in production :sob:
+         */
+        const { id } = await DB.prepare(`SELECT id FROM users WHERE email = ?`)
+          .bind(email)
+          .first<{ id: number }>();
 
         const user = {
-          id: userId,
+          id,
           email,
         };
 
@@ -81,13 +97,9 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
           cause: e.cause?.message,
         });
 
-        const error = e.cause?.message?.toLowerCase().includes("unique")
-          ? "A user is registered with that email address. Did you mean to log in?"
-          : "An error occurred. Please try again later.";
-
         return json(
           {
-            error,
+            error: "Something went wrong. Please try again later.",
           },
           { status: 500 }
         );
