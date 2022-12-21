@@ -61,9 +61,9 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
         `SELECT id FROM users WHERE email = ?`
       )
         .bind(email)
-        .first<{ id: number }>();
+        .all<{ id: number }>();
 
-      if (existingUser) {
+      if (existingUser.results?.length) {
         return json(
           {
             error:
