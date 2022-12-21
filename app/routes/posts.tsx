@@ -6,9 +6,12 @@ import { SimpleLayout } from "~/components/SimpleLayout";
 import { formatDate } from "~/utils/date";
 import { type Post } from "./posts.$slug";
 
-export async function loader({ context: { DB } }: LoaderArgs) {
+export async function loader({ context: { DB, auth } }: LoaderArgs) {
+  const isLoggedIn = await auth.check();
+
+  const where = isLoggedIn ? "" : "WHERE status = 'published'";
   const posts = await DB.prepare(
-    "SELECT * FROM posts WHERE status = 'published' ORDER BY created_at DESC"
+    `SELECT * FROM posts ${where} ORDER BY created_at DESC`
   ).all<Post>();
 
   invariant(posts.results, "Something went wrong when querying posts.");
@@ -47,7 +50,10 @@ function Article({ post }: { post: Post }) {
   return (
     <article className="md:grid md:grid-cols-4 md:items-baseline">
       <Card className="md:col-span-3">
-        <Card.Title to={`/posts/${post.slug}`}>{post.title}</Card.Title>
+        <Card.Title to={`/posts/${post.slug}`}>
+          {post.title}
+          {post.status === "draft" && " (DRAFT)"}
+        </Card.Title>
         <Card.Eyebrow
           as="time"
           dateTime={post.created_at}
