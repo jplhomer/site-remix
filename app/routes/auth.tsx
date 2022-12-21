@@ -49,6 +49,15 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
         );
       }
 
+      if (email !== "jplhomer@gmail.com") {
+        return json(
+          {
+            error: "You are not me. Sorry, not sorry.",
+          },
+          { status: 400 }
+        );
+      }
+
       try {
         const result = await DB.prepare(
           `INSERT INTO users (email, password) VALUES (?, ?)`
@@ -65,8 +74,7 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
           email,
         };
 
-        // Under the hood, updates session to include user data.
-        return await auth.login(user, "/");
+        return auth.login(user, "/");
       } catch (e: any) {
         console.log({
           message: e.message,
