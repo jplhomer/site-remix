@@ -24,7 +24,7 @@ export const INTENTS = {
 
 export async function action({ request, context: { auth, DB } }: ActionArgs) {
   const form = new URLSearchParams(await request.text());
-  const email = form.get("email");
+  const email = form.get("email")?.toLowerCase();
   const password = form.get("password");
   const intent = form.get("intent");
 
