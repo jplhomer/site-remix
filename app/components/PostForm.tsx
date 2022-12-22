@@ -37,6 +37,7 @@ export function PostForm({ post }: { post?: Post }) {
             id="slug"
             className="w-full font-mono"
             defaultValue={post?.slug}
+            required
           />
         </>
       )}

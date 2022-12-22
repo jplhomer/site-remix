@@ -18,11 +18,9 @@ export async function loader({ params, context: { auth, DB } }: LoaderArgs) {
   });
 }
 
-export async function action({
-  request,
-  params,
-  context: { DB, auth },
-}: ActionArgs) {
+const badRequest = (error: string) => json({ error }, { status: 400 });
+
+export async function action({ request, params, context: { DB } }: ActionArgs) {
   const post = await DB.prepare("SELECT id FROM posts WHERE slug = ?")
     .bind(params.slug)
     .first<{ id: number }>();
@@ -36,13 +34,12 @@ export async function action({
   const slug = form.get("slug");
   const status = form.get("status");
 
-  if (!title) {
-    return json(
-      {
-        error: "Missing title",
-      },
-      { status: 400 }
-    );
+  const requiredFields = ["title", "slug", "status"];
+
+  for (const field of requiredFields) {
+    if (!form.get(field)) {
+      return badRequest(`Missing ${field}`);
+    }
   }
 
   const fields = ["title", "content", "slug", "status", "description"];
