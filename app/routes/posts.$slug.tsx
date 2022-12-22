@@ -1,22 +1,13 @@
 import { json, type LoaderArgs } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { useNavigate } from "react-router";
 import { Container } from "~/components/Container";
+import { type Post } from "~/components/PostForm";
 import { Prose } from "~/components/Prose";
 import { formatDate } from "~/utils/date";
 import { convertToHtml } from "~/utils/markdown";
 
-export interface Post {
-  id: number;
-  title: string;
-  content: string;
-  description: string;
-  slug: string;
-  status: string;
-  created_at: string;
-}
-
-export async function loader({ params, context: { DB } }: LoaderArgs) {
+export async function loader({ params, context: { DB, auth } }: LoaderArgs) {
   const { slug } = params;
   const post = await DB.prepare("SELECT * FROM posts WHERE slug = ?1 LIMIT 1")
     .bind(slug)
@@ -31,6 +22,7 @@ export async function loader({ params, context: { DB } }: LoaderArgs) {
       ...post,
       content: await convertToHtml(post.content),
     },
+    isLoggedIn: await auth.check(),
   });
 }
 
@@ -45,7 +37,8 @@ export function meta({ data }: { data: { post: Post } }) {
 
 export default function PostView() {
   const navigate = useNavigate();
-  const { post } = useLoaderData<typeof loader>();
+  const { post, isLoggedIn } = useLoaderData<typeof loader>();
+
   return (
     <Container className="mt-16 lg:mt-32">
       <div className="xl:relative">
@@ -71,6 +64,7 @@ export default function PostView() {
                 <span className="ml-3">{formatDate(post.created_at)}</span>
               </time>
             </header>
+            {isLoggedIn && <Link to={`/posts/${post.slug}/edit`}>Edit</Link>}
             <Prose className="mt-8" html={post.content} />
           </article>
         </div>
