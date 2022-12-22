@@ -1,4 +1,7 @@
-import { type SessionStorage } from "@remix-run/cloudflare";
+import {
+  createCookieSessionStorage,
+  type SessionStorage,
+} from "@remix-run/cloudflare";
 import bcrypt from "bcryptjs";
 
 interface UserRow {
@@ -12,11 +15,23 @@ export type User = Pick<UserRow, "id" | "email">;
 const SESSION_KEY = "auth.user_id";
 
 export class AuthService {
+  private sessionStorage: SessionStorage;
+
   constructor(
     private request: Request,
     private db: D1Database,
-    private sessionStorage: SessionStorage
-  ) {}
+    secrets: string[]
+  ) {
+    this.sessionStorage = createCookieSessionStorage({
+      cookie: {
+        name: "session",
+        path: "/",
+        httpOnly: true,
+        secrets,
+        secure: process.env.NODE_ENV === "production", // enable this in prod only
+      },
+    });
+  }
 
   private async getSession() {
     return await this.sessionStorage.getSession(
