@@ -55,6 +55,12 @@ export default function PostView() {
             <header className="flex flex-col">
               <h1 className="mt-6 text-4xl font-bold tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-5xl">
                 {post.title}
+                {post.status === "draft" && (
+                  <span className="text-zinc-400 dark:text-zinc-500">
+                    {" "}
+                    (Draft)
+                  </span>
+                )}
               </h1>
               <time
                 dateTime={post.created_at}
