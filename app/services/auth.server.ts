@@ -24,7 +24,11 @@ export class AuthService {
     );
   }
 
-  async attempt(email: string, password: string, redirectTo?: string) {
+  /**
+   * Attempt to log in a user with the given credentials.
+   * @returns `set-cookie` header value or `false` if the attempt failed
+   */
+  async attempt(email: string, password: string): Promise<string | false> {
     const row = await this.db
       .prepare("SELECT * FROM users WHERE email = ?")
       .bind(email)
@@ -34,18 +38,18 @@ export class AuthService {
       return false;
     }
 
-    return await this.login({ id: row.id, email: row.email }, redirectTo);
+    return this.login({ id: row.id, email: row.email });
   }
 
-  async login(user: User, redirectTo = "/") {
+  /**
+   * Manually log in a user.
+   * @returns `set-cookie` header value
+   */
+  async login(user: User): Promise<string> {
     const session = await this.getSession();
     session.set(SESSION_KEY, user.id);
 
-    throw redirect(redirectTo, {
-      headers: {
-        "set-cookie": await this.sessionStorage.commitSession(session),
-      },
-    });
+    return this.sessionStorage.commitSession(session);
   }
 
   async check() {

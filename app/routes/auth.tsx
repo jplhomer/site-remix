@@ -22,39 +22,30 @@ export const INTENTS = {
   logout: "logout",
 };
 
+const badRequest = (error: string) => json({ error }, { status: 400 });
+
 export async function action({ request, context: { auth, DB } }: ActionArgs) {
   const form = new URLSearchParams(await request.text());
   const email = form.get("email")?.toLowerCase();
   const password = form.get("password");
   const intent = form.get("intent");
 
+  if (intent === INTENTS.logout) {
+    return auth.logout();
+  }
+
+  if (!email) {
+    return badRequest("Missing email");
+  }
+
+  if (!password) {
+    return badRequest("Missing password");
+  }
+
   switch (intent) {
     case INTENTS.register:
-      if (!email) {
-        return json(
-          {
-            error: "Missing email",
-          },
-          { status: 400 }
-        );
-      }
-
-      if (!password) {
-        return json(
-          {
-            error: "Missing password",
-          },
-          { status: 400 }
-        );
-      }
-
       if (email !== "jplhomer@gmail.com") {
-        return json(
-          {
-            error: "You are not me. Sorry, not sorry.",
-          },
-          { status: 400 }
-        );
+        return badRequest("You are not me. Sorry, not sorry.");
       }
 
       const existingUser = await DB.prepare(
@@ -64,12 +55,8 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
         .all<{ id: number }>();
 
       if (existingUser.results?.length) {
-        return json(
-          {
-            error:
-              "A user is registered with that email address. Did you mean to log in?",
-          },
-          { status: 400 }
+        return badRequest(
+          "A user is registered with that email address. Did you mean to log in?"
         );
       }
 
@@ -90,7 +77,11 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
           email,
         };
 
-        return auth.login(user, "/");
+        return redirect("/", {
+          headers: {
+            "set-cookie": await auth.login(user),
+          },
+        });
       } catch (e: any) {
         console.log({
           message: e.message,
@@ -106,28 +97,17 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
       }
 
     case INTENTS.login:
-      if (!email) {
-        return json(
-          {
-            error: "Missing email",
-          },
-          { status: 400 }
-        );
+      const cookie = await auth.attempt(email, password);
+
+      if (!cookie) {
+        return badRequest("Invalid email or password");
       }
 
-      if (!password) {
-        return json(
-          {
-            error: "Missing password",
-          },
-          { status: 400 }
-        );
-      }
-
-      return auth.attempt(email, password, "/");
-
-    case INTENTS.logout:
-      return auth.logout();
+      return redirect("/", {
+        headers: {
+          "set-cookie": cookie,
+        },
+      });
   }
 
   throw new Error(`Invalid intent: ${intent}`);
