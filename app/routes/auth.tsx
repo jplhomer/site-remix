@@ -52,6 +52,9 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
         return badRequest("You are not me. Sorry, not sorry.");
       }
 
+      /**
+       * N.B. calling `first()` here breaks in prod but not locally. I'm not sure why.
+       */
       const existingUser = await DB.prepare(
         `SELECT id FROM users WHERE email = ?`
       )
