@@ -68,6 +68,15 @@ export async function action({ request, params, context: { DB } }: ActionArgs) {
   return redirect(`/posts/${slug}`);
 }
 
+export function meta({ data }: { data: { post: Post } }) {
+  const { post } = data;
+
+  return {
+    title: `Editing ${post.title}`,
+    description: "Edit this post",
+  };
+}
+
 export default function EditPost() {
   const { post } = useLoaderData<typeof loader>();
 
