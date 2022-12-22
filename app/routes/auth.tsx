@@ -31,7 +31,11 @@ export async function action({ request, context: { auth, DB } }: ActionArgs) {
   const intent = form.get("intent");
 
   if (intent === INTENTS.logout) {
-    return auth.logout();
+    return redirect("/", {
+      headers: {
+        "set-cookie": await auth.logout(),
+      },
+    });
   }
 
   if (!email) {

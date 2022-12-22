@@ -1,4 +1,4 @@
-import { redirect, type SessionStorage } from "@remix-run/cloudflare";
+import { type SessionStorage } from "@remix-run/cloudflare";
 import bcrypt from "bcryptjs";
 
 interface UserRow {
@@ -56,14 +56,11 @@ export class AuthService {
     return !!(await this.id());
   }
 
-  async logout(redirectTo = "/") {
-    throw redirect(redirectTo, {
-      headers: {
-        "set-cookie": await this.sessionStorage.destroySession(
-          await this.getSession()
-        ),
-      },
-    });
+  /**
+   * @returns `set-cookie` header value
+   */
+  async logout(): Promise<string> {
+    return this.sessionStorage.destroySession(await this.getSession());
   }
 
   async id() {
