@@ -7,8 +7,7 @@ const createRequestHandler = createPagesFunctionHandler({
   mode: process.env.NODE_ENV,
   getLoadContext: (context) => {
     const auth = new AuthService(context.request, context.env.DB, [
-      "foo",
-      "bar",
+      context.env.SESSION_SECRET,
     ]);
 
     return {
@@ -19,5 +18,10 @@ const createRequestHandler = createPagesFunctionHandler({
 });
 
 export const onRequest: PagesFunction = async (context) => {
+  // @ts-ignore I don't know how to fix this.
+  if (!context.env.SESSION_SECRET) {
+    throw new Error("SESSION_SECRET is not set");
+  }
+
   return createRequestHandler(context);
 };
