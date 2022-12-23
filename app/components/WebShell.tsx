@@ -2,15 +2,17 @@ import clsx from "clsx";
 import React, { useCallback, useEffect, useState } from "react";
 
 export function WebShell({ children }: { children: React.ReactNode }) {
+  const MAX_SHELLS = 5;
   const [height, setHeight] = useState<string | number>(0);
   const [focusedIndex, setFocusedIndex] = useState<number | boolean>(false);
+  const [mostRecentFocusedIndex, setMostRecentFocusedIndex] =
+    useState<number>(0);
   const [shellCount, setShellCount] = useState(1);
 
   const toggleVisibility = useCallback(() => {
-    // TODO: Set focused index to previously-focused shell when opening from closed
-    setFocusedIndex(height === 0 ? 0 : false);
+    setFocusedIndex(height === 0 ? mostRecentFocusedIndex : false);
     setHeight((height) => (height === 0 ? "50%" : 0));
-  }, [height]);
+  }, [height, mostRecentFocusedIndex]);
 
   useWebShellKeyboardShortcuts({ toggleVisibility });
 
@@ -23,16 +25,43 @@ export function WebShell({ children }: { children: React.ReactNode }) {
         <div className="h-full overflow-auto">{children}</div>
       </div>
       <div
-        className="overflow-hidden bg-black font-mono transition-all duration-500 ease-in-out"
+        className="overflow-hidden bg-black transition-all duration-500 ease-in-out flex flex-col flex-nowrap"
         style={{ height }}
       >
-        {Array.from({ length: shellCount }).map((_, shellIndex) => (
-          <Shell
-            key={shellIndex}
-            isFocused={focusedIndex === shellIndex}
-            onFocus={() => setFocusedIndex(shellIndex)}
-          />
-        ))}
+        <div className="border border-gray-600 bg-gray-100 p-2 flex items-center justify-between">
+          <span>Shell</span>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                if (shellCount >= MAX_SHELLS) return;
+                setShellCount(shellCount + 1);
+                setFocusedIndex(shellCount);
+              }}
+            >
+              Split
+            </button>
+            <button onClick={toggleVisibility}>Close</button>
+          </div>
+        </div>
+        <div
+          className="grid min-h-full"
+          style={{
+            gridTemplateColumns:
+              shellCount > 1 ? `repeat(${shellCount}, minmax(0px, 100%)` : "",
+            gridTemplateRows: "repeat(1, 100%)",
+          }}
+        >
+          {Array.from({ length: shellCount }).map((_, shellIndex) => (
+            <Shell
+              key={shellIndex}
+              isFocused={focusedIndex === shellIndex}
+              onFocus={() => {
+                setFocusedIndex(shellIndex);
+                setMostRecentFocusedIndex(shellIndex);
+              }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -222,7 +251,7 @@ function Shell({
       role="textbox"
       onClick={onFocus}
       className={clsx(
-        "h-full overflow-scroll p-4 bg-slate-700 text-white",
+        "h-full overflow-scroll p-4 bg-slate-700 text-white font-mono min-h-full",
         !isFocused && "opacity-75"
       )}
     >
