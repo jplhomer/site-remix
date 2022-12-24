@@ -2,12 +2,12 @@ import clsx from "clsx";
 import React, { useCallback, useEffect, useState } from "react";
 
 export function WebShell({ children }: { children: React.ReactNode }) {
-  const MAX_SHELLS = 5;
+  const MAX_PANELS = 5;
   const [height, setHeight] = useState<string | number>(0);
   const [focusedIndex, setFocusedIndex] = useState<number | boolean>(false);
   const [mostRecentFocusedIndex, setMostRecentFocusedIndex] =
     useState<number>(0);
-  const [shellCount, setShellCount] = useState(1);
+  const [panelIds, setPanelIds] = useState<string[]>([createPanelId()]);
 
   const toggleVisibility = useCallback(() => {
     setFocusedIndex(height === 0 ? mostRecentFocusedIndex : false);
@@ -28,14 +28,15 @@ export function WebShell({ children }: { children: React.ReactNode }) {
         className="overflow-hidden bg-black transition-all duration-500 ease-in-out flex flex-col flex-nowrap"
         style={{ height }}
       >
-        <div className="border border-gray-600 bg-gray-100 p-2 flex items-center justify-between">
+        <div className="border border-gray-600 bg-gray-100 dark:bg-gray-800 p-2 flex items-center justify-between">
           <span>Shell</span>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => {
-                if (shellCount >= MAX_SHELLS) return;
-                setShellCount(shellCount + 1);
-                setFocusedIndex(shellCount);
+                if (panelIds.length >= MAX_PANELS) return;
+                // Add random ID to panelIds
+                setPanelIds((panelIds) => [...panelIds, createPanelId()]);
+                setFocusedIndex(panelIds.length);
               }}
             >
               Split
@@ -47,17 +48,27 @@ export function WebShell({ children }: { children: React.ReactNode }) {
           className="grid min-h-full"
           style={{
             gridTemplateColumns:
-              shellCount > 1 ? `repeat(${shellCount}, minmax(0px, 100%)` : "",
+              panelIds.length > 1
+                ? `repeat(${panelIds.length}, minmax(0px, 100%)`
+                : "",
             gridTemplateRows: "repeat(1, 100%)",
           }}
         >
-          {Array.from({ length: shellCount }).map((_, shellIndex) => (
-            <Shell
-              key={shellIndex}
-              isFocused={focusedIndex === shellIndex}
+          {panelIds.map((id, index) => (
+            <ShellPanel
+              id={id}
+              key={id}
+              isFocused={focusedIndex === index}
+              panelCount={panelIds.length}
               onFocus={() => {
-                setFocusedIndex(shellIndex);
-                setMostRecentFocusedIndex(shellIndex);
+                setFocusedIndex(index);
+                setMostRecentFocusedIndex(index);
+              }}
+              onClose={() => {
+                setPanelIds((panelIds) =>
+                  panelIds.filter((panelId) => panelId !== id)
+                );
+                setFocusedIndex(Math.max(0, (focusedIndex as number) - 1));
               }}
             />
           ))}
@@ -65,6 +76,10 @@ export function WebShell({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
+}
+
+function createPanelId() {
+  return crypto.randomUUID();
 }
 
 function useWebShellKeyboardShortcuts({
@@ -84,11 +99,43 @@ function useWebShellKeyboardShortcuts({
   );
 
   useEffect(() => {
-    // TODO: Only add event listener when shell is focused/visible
     document.addEventListener("keydown", onKeyDown);
 
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onKeyDown]);
+}
+
+function ShellPanel({
+  isFocused,
+  onFocus,
+  onClose,
+  panelCount = 1,
+  id,
+}: {
+  isFocused: boolean;
+  onFocus: () => void;
+  onClose: () => void;
+  panelCount: number;
+  id: string;
+}) {
+  return (
+    <div className="flex flex-col" role="tabpanel" onClick={onFocus}>
+      {panelCount > 1 && (
+        <div
+          className={clsx(
+            "flex items-center justify-between p-2 text-sm",
+            isFocused
+              ? "bg-gray-200 dark:bg-gray-800"
+              : "bg-gray-300 dark:bg-gray-700"
+          )}
+        >
+          <span>jplhomer</span>
+          <button onClick={onClose}>Close</button>
+        </div>
+      )}
+      <Shell isFocused={isFocused} />;
+    </div>
+  );
 }
 
 type Output = {
@@ -96,13 +143,7 @@ type Output = {
   type: "prompt" | "output";
 };
 
-function Shell({
-  isFocused,
-  onFocus,
-}: {
-  isFocused: boolean;
-  onFocus: () => void;
-}) {
+function Shell({ isFocused }: { isFocused: boolean }) {
   const [prompt, setPrompt] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [commands, setCommands] = useState<string[]>([]);
@@ -249,10 +290,9 @@ function Shell({
   return (
     <div
       role="textbox"
-      onClick={onFocus}
       className={clsx(
         "h-full overflow-scroll p-4 bg-slate-700 text-white font-mono min-h-full",
-        !isFocused && "opacity-75"
+        !isFocused && "opacity-60"
       )}
     >
       <p>I am a shell</p>
