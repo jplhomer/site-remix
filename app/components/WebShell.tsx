@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 export function WebShell({ children }: { children: React.ReactNode }) {
   const MAX_PANELS = 5;
@@ -34,7 +34,6 @@ export function WebShell({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => {
                 if (panelIds.length >= MAX_PANELS) return;
-                // Add random ID to panelIds
                 setPanelIds((panelIds) => [...panelIds, createPanelId()]);
                 setFocusedIndex(panelIds.length);
               }}
@@ -143,51 +142,158 @@ type Output = {
   type: "prompt" | "output";
 };
 
+type Command = {
+  name: string;
+  description: string;
+  showInAutomplete?: boolean;
+  handle: CommandHandler;
+};
+
+type CommandHandler = ({
+  args,
+  print,
+  clear,
+}: {
+  /**
+   * The arguments passed to the command.
+   */
+  args: string[];
+  /**
+   * Prints the given text to the output.
+   */
+  print: (text: string) => void;
+  /**
+   * Clears the shell.
+   */
+  clear: () => void;
+}) => void;
+
+const registeredCommands: Command[] = [
+  {
+    name: "clear",
+    description: "Clears the terminal",
+    showInAutomplete: false,
+    handle({ clear }) {
+      clear();
+    },
+  },
+  {
+    name: "echo",
+    description: "Prints the given text",
+    showInAutomplete: false,
+    handle({ args, print }) {
+      print(args.join(" "));
+    },
+  },
+  {
+    name: "time",
+    description: "Prints the current time",
+    handle({ print }) {
+      print("It's bad-bitch-o-clock");
+    },
+  },
+  {
+    name: "treats",
+    description: "Gives you a treat",
+    handle({ print }) {
+      print("OK here is a treat");
+    },
+  },
+];
+
 function Shell({ isFocused }: { isFocused: boolean }) {
   const [prompt, setPrompt] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
-  const [commands, setCommands] = useState<string[]>([]);
-  const [commandsIndex, setCommandsIndex] = useState(0);
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [commandHistoryIndex, setCommandHistoryIndex] = useState(0);
+  const [autocompleteIndex, setAutocompleteIndex] = useState<number | false>(
+    false
+  );
   const [outputs, setOutputs] = useState<Output[]>([]);
 
-  const attemptToRunCommand = useCallback(
-    (command: string) => {
-      const [commandName, ...args] = command.split(" ");
+  const autocompleteCommands = useMemo<Command[]>(() => {
+    const [commandName] = prompt.split(" ");
 
-      switch (commandName.trim()) {
+    if (commandName.trim() === "") return [];
+
+    return registeredCommands
+      .filter((command) => command.name.startsWith(commandName.trim()))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [prompt]);
+
+  const runCommand = useCallback((command: Command, args: any) => {
+    const handlerArgs = {
+      args,
+      print: (text: string) =>
+        setOutputs((outputs) => [...outputs, { text, type: "output" }]),
+      clear: () => setOutputs([]),
+    };
+
+    setOutputs((outputs) => [
+      ...outputs,
+      { text: command.name, type: "prompt" },
+    ]);
+    setCommandHistory((commands) => [...commands, command.name]);
+    setPrompt("");
+    setCursorPosition(0);
+    setCommandHistoryIndex((i) => i + 1);
+    command.handle(handlerArgs);
+  }, []);
+
+  const attemptToRunCommand = useCallback(
+    (input: string) => {
+      const [commandInput, ...args] = input.split(" ");
+
+      const selectedAutocompleteCommand =
+        autocompleteIndex !== false && autocompleteCommands[autocompleteIndex];
+
+      if (selectedAutocompleteCommand) {
+        runCommand(selectedAutocompleteCommand, []);
+
+        return;
+      }
+
+      let match;
+      if (
+        (match = registeredCommands.find(
+          (command) => command.name === commandInput.trim()
+        ))
+      ) {
+        runCommand(match, args);
+
+        return;
+      }
+
+      switch (commandInput.trim()) {
         case "":
-          break;
-        case "clear":
-          setOutputs([]);
-          break;
-        case "echo":
           setOutputs((outputs) => [
             ...outputs,
-            { text: args.join(" "), type: "output" },
+            { text: input, type: "prompt" },
           ]);
           break;
         default:
           setOutputs((outputs) => [
             ...outputs,
-            { text: `Command not found: ${commandName}`, type: "output" },
+            { text: input, type: "prompt" },
+          ]);
+          setCommandHistory((commands) => [...commands, input]);
+          setPrompt("");
+          setCursorPosition(0);
+          setCommandHistoryIndex((i) => i + 1);
+
+          setOutputs((outputs) => [
+            ...outputs,
+            { text: `Command not found: ${commandInput}`, type: "output" },
           ]);
       }
     },
-    [setOutputs]
+    [autocompleteCommands, autocompleteIndex, runCommand]
   );
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
       switch (e.key) {
         case "Enter":
-          setOutputs((outputs) => [
-            ...outputs,
-            { text: prompt, type: "prompt" },
-          ]);
-          setCommands((commands) => [...commands, prompt]);
-          setPrompt("");
-          setCursorPosition(0);
-          setCommandsIndex((i) => i + 1);
           attemptToRunCommand(prompt);
           break;
 
@@ -206,6 +312,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
 
           setPrompt(newPrompt);
           setCursorPosition(newPrompt.length);
+          setAutocompleteIndex(false);
           break;
 
         case "ArrowLeft":
@@ -219,26 +326,38 @@ function Shell({ isFocused }: { isFocused: boolean }) {
           );
         case "ArrowUp":
           // If we're at the first command, do nothing
-          if (commandsIndex === 0) {
+          if (commandHistoryIndex === 0) {
             return;
           }
 
           // If we're at the last command, save the current prompt
-          if (commandsIndex === commands.length) {
-            setCommands((commands) => [...commands, prompt]);
+          if (commandHistoryIndex === commandHistory.length) {
+            setCommandHistory((commands) => [...commands, prompt]);
           }
 
-          setCommandsIndex((commandsIndex) => commandsIndex - 1);
-          setPrompt(commands[commandsIndex - 1]);
+          setCommandHistoryIndex((commandsIndex) => commandsIndex - 1);
+          setPrompt(commandHistory[commandHistoryIndex - 1]);
+          setCursorPosition(commandHistory[commandHistoryIndex - 1].length);
           break;
         case "ArrowDown":
           // If we're at the last command, do nothing
-          if (commandsIndex + 1 >= commands.length) {
+          if (commandHistoryIndex + 1 >= commandHistory.length) {
             return;
           }
 
-          setCommandsIndex((i) => i + 1);
-          setPrompt(() => commands[commandsIndex + 1]);
+          setCommandHistoryIndex((i) => i + 1);
+          setPrompt(() => commandHistory[commandHistoryIndex + 1]);
+          setCursorPosition(commandHistory[commandHistoryIndex + 1].length);
+          break;
+        case "Tab":
+          e.preventDefault();
+          if (autocompleteCommands.length === 0) return;
+          const direction = e.shiftKey ? -1 : 1;
+          setAutocompleteIndex((i) =>
+            i === false
+              ? 0
+              : Math.abs((i + direction) % autocompleteCommands.length)
+          );
           break;
 
         case "Meta":
@@ -246,7 +365,6 @@ function Shell({ isFocused }: { isFocused: boolean }) {
         case "Shift":
         case "Alt":
         case "CapsLock":
-        case "Tab":
         case "Escape":
           return;
         default:
@@ -276,7 +394,13 @@ function Shell({ isFocused }: { isFocused: boolean }) {
           setCursorPosition((cursorPosition) => cursorPosition + 1);
       }
     },
-    [attemptToRunCommand, commands, commandsIndex, prompt]
+    [
+      attemptToRunCommand,
+      autocompleteCommands.length,
+      commandHistory,
+      commandHistoryIndex,
+      prompt,
+    ]
   );
 
   useEffect(() => {
@@ -291,15 +415,18 @@ function Shell({ isFocused }: { isFocused: boolean }) {
     <div
       role="textbox"
       className={clsx(
-        "h-full overflow-scroll p-4 bg-slate-700 text-white font-mono min-h-full",
+        "h-full overflow-scroll p-4 bg-slate-700 text-white font-mono min-h-full text-sm",
         !isFocused && "opacity-60"
       )}
     >
       <p>I am a shell</p>
-      <div className="space-y-4">
+      <div className="space-y-2">
         {outputs.map((output, index) => (
           <p
-            className={clsx(output.type === "output" && "text-zinc-300")}
+            className={clsx(
+              "mb-2",
+              output.type === "output" && "text-zinc-300"
+            )}
             key={index}
           >
             {output.type === "prompt" && <PromptPrefix />}
@@ -318,6 +445,19 @@ function Shell({ isFocused }: { isFocused: boolean }) {
           ))}
           {cursorPosition === prompt.length && <Cursor isFocused={isFocused} />}
         </div>
+        {autocompleteCommands.length > 0 && (
+          <div className="text-zinc-400">
+            {autocompleteCommands.map((command, index) => (
+              <p key={command.name}>
+                <span
+                  className={clsx(autocompleteIndex === index && "text-white")}
+                >
+                  {command.name}
+                </span>
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
