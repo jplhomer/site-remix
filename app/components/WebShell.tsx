@@ -147,6 +147,7 @@ type Command = {
   description: string;
   showInAutomplete?: boolean;
   handle: CommandHandler;
+  commands?: Command[];
 };
 
 type CommandHandler = ({
@@ -198,11 +199,27 @@ const registeredCommands: Command[] = [
     handle({ print }) {
       print("OK here is a treat");
     },
+    commands: [
+      {
+        name: "cookie",
+        description: "You want a cookie?",
+        handle({ print }) {
+          print("Fine here is a cookie");
+        },
+      },
+      {
+        name: "pizza",
+        description: "Wow",
+        handle({ print }) {
+          print("Whatever");
+        },
+      },
+    ],
   },
 ];
 
 function Shell({ isFocused }: { isFocused: boolean }) {
-  const [prompt, setPrompt] = useState("");
+  const [input, setInput] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [commandHistoryIndex, setCommandHistoryIndex] = useState(0);
@@ -212,14 +229,14 @@ function Shell({ isFocused }: { isFocused: boolean }) {
   const [outputs, setOutputs] = useState<Output[]>([]);
 
   const autocompleteCommands = useMemo<Command[]>(() => {
-    const [commandName] = prompt.split(" ");
+    const [commandName] = input.split(" ");
 
     if (commandName.trim() === "") return [];
 
     return registeredCommands
       .filter((command) => command.name.startsWith(commandName.trim()))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [prompt]);
+  }, [input]);
 
   const runCommand = useCallback((command: Command, args: any) => {
     const handlerArgs = {
@@ -234,7 +251,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
       { text: command.name, type: "prompt" },
     ]);
     setCommandHistory((commands) => [...commands, command.name]);
-    setPrompt("");
+    setInput("");
     setCursorPosition(0);
     setCommandHistoryIndex((i) => i + 1);
     command.handle(handlerArgs);
@@ -253,16 +270,10 @@ function Shell({ isFocused }: { isFocused: boolean }) {
         return;
       }
 
-      let match;
-      if (
-        (match = registeredCommands.find(
-          (command) => command.name === commandInput.trim()
-        ))
-      ) {
-        runCommand(match, args);
-
-        return;
-      }
+      // While we have non-flag arguments, check if the command is a subcommand
+      const findMatchingCommand = (input: string, commands: Command[]) => {
+        return commands.find((command) => command.name === input);
+      };
 
       switch (commandInput.trim()) {
         case "":
@@ -277,7 +288,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
             { text: input, type: "prompt" },
           ]);
           setCommandHistory((commands) => [...commands, input]);
-          setPrompt("");
+          setInput("");
           setCursorPosition(0);
           setCommandHistoryIndex((i) => i + 1);
 
@@ -294,23 +305,23 @@ function Shell({ isFocused }: { isFocused: boolean }) {
     (e: KeyboardEvent) => {
       switch (e.key) {
         case "Enter":
-          attemptToRunCommand(prompt);
+          attemptToRunCommand(input);
           break;
 
         case "Backspace":
           const deleteAll = e.metaKey;
           const deleteWord = e.altKey;
 
-          let newPrompt = prompt;
+          let newPrompt = input;
           if (deleteAll) {
             newPrompt = "";
           } else if (deleteWord) {
-            newPrompt = prompt.replace(/\s*[\w\d:/._-]+\s*$/, "");
+            newPrompt = input.replace(/\s*[\w\d:/._-]+\s*$/, "");
           } else {
-            newPrompt = prompt.slice(0, -1);
+            newPrompt = input.slice(0, -1);
           }
 
-          setPrompt(newPrompt);
+          setInput(newPrompt);
           setCursorPosition(newPrompt.length);
           setAutocompleteIndex(false);
           break;
@@ -322,7 +333,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
           break;
         case "ArrowRight":
           setCursorPosition((cursorPosition) =>
-            Math.min(cursorPosition + 1, prompt.length)
+            Math.min(cursorPosition + 1, input.length)
           );
         case "ArrowUp":
           // If we're at the first command, do nothing
@@ -332,11 +343,11 @@ function Shell({ isFocused }: { isFocused: boolean }) {
 
           // If we're at the last command, save the current prompt
           if (commandHistoryIndex === commandHistory.length) {
-            setCommandHistory((commands) => [...commands, prompt]);
+            setCommandHistory((commands) => [...commands, input]);
           }
 
           setCommandHistoryIndex((commandsIndex) => commandsIndex - 1);
-          setPrompt(commandHistory[commandHistoryIndex - 1]);
+          setInput(commandHistory[commandHistoryIndex - 1]);
           setCursorPosition(commandHistory[commandHistoryIndex - 1].length);
           break;
         case "ArrowDown":
@@ -346,7 +357,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
           }
 
           setCommandHistoryIndex((i) => i + 1);
-          setPrompt(() => commandHistory[commandHistoryIndex + 1]);
+          setInput(() => commandHistory[commandHistoryIndex + 1]);
           setCursorPosition(commandHistory[commandHistoryIndex + 1].length);
           break;
         case "Tab":
@@ -372,7 +383,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
             switch (e.key) {
               case "v":
                 navigator.clipboard.readText().then((text) => {
-                  setPrompt((prompt) => prompt + text);
+                  setInput((prompt) => prompt + text);
                   setCursorPosition(
                     (cursorPosition) => cursorPosition + text.length
                   );
@@ -390,7 +401,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
             }
           }
 
-          setPrompt((prompt) => prompt + e.key);
+          setInput((prompt) => prompt + e.key);
           setCursorPosition((cursorPosition) => cursorPosition + 1);
       }
     },
@@ -399,7 +410,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
       autocompleteCommands.length,
       commandHistory,
       commandHistoryIndex,
-      prompt,
+      input,
     ]
   );
 
@@ -419,14 +430,12 @@ function Shell({ isFocused }: { isFocused: boolean }) {
         !isFocused && "opacity-60"
       )}
     >
+      {/* TODO: Intro and helper text. */}
       <p>I am a shell</p>
-      <div className="space-y-2">
+      <div>
         {outputs.map((output, index) => (
           <p
-            className={clsx(
-              "mb-2",
-              output.type === "output" && "text-zinc-300"
-            )}
+            className={clsx(output.type === "output" && "text-zinc-300 mb-4")}
             key={index}
           >
             {output.type === "prompt" && <PromptPrefix />}
@@ -435,7 +444,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
         ))}
         <div>
           <PromptPrefix />
-          {prompt.split("").map((letter, index) => (
+          {input.split("").map((letter, index) => (
             <Letter
               key={index}
               letter={letter}
@@ -443,17 +452,20 @@ function Shell({ isFocused }: { isFocused: boolean }) {
               isFocused={isFocused}
             />
           ))}
-          {cursorPosition === prompt.length && <Cursor isFocused={isFocused} />}
+          {cursorPosition === input.length && <Cursor isFocused={isFocused} />}
         </div>
         {autocompleteCommands.length > 0 && (
           <div className="text-zinc-400">
             {autocompleteCommands.map((command, index) => (
               <p key={command.name}>
-                <span
+                <button
                   className={clsx(autocompleteIndex === index && "text-white")}
+                  onClick={() => {
+                    runCommand(command, []);
+                  }}
                 >
                   {command.name}
-                </span>
+                </button>
               </p>
             ))}
           </div>
@@ -507,5 +519,5 @@ function Letter({
 }
 
 function PromptPrefix() {
-  return <span className="font-bold">(jplhomer.org) $ </span>;
+  return <span className="font-bold">$ </span>;
 }
