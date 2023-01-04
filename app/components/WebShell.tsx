@@ -150,6 +150,11 @@ type Command = {
   commands?: Command[];
 };
 
+type RegisteredCommand = Command & {
+  fullName: string;
+  commands?: RegisteredCommand[];
+};
+
 type CommandHandler = ({
   args,
   print,
@@ -169,7 +174,7 @@ type CommandHandler = ({
   clear: () => void;
 }) => void;
 
-const registeredCommands: Command[] = [
+const registeredCommands = registerCommands([
   {
     name: "clear",
     description: "Clears the terminal",
@@ -216,7 +221,29 @@ const registeredCommands: Command[] = [
       },
     ],
   },
-];
+]);
+
+function registerCommands(commands: Command[]): RegisteredCommand[] {
+  function addFullName(
+    command: Command,
+    parentName?: string
+  ): RegisteredCommand {
+    const fullName = parentName
+      ? parentName + " " + command.name
+      : command.name;
+    const registeredCommand: RegisteredCommand = {
+      ...command,
+      fullName,
+      commands: command.commands?.map((subcommand) =>
+        addFullName(subcommand, fullName)
+      ),
+    };
+
+    return registeredCommand;
+  }
+
+  return commands.map((command) => addFullName(command));
+}
 
 function Shell({ isFocused }: { isFocused: boolean }) {
   const [input, setInput] = useState("");
@@ -228,29 +255,29 @@ function Shell({ isFocused }: { isFocused: boolean }) {
   );
   const [outputs, setOutputs] = useState<Output[]>([]);
 
-  const autocompleteCommands = useMemo<Command[]>(() => {
-    const [commandName] = input.split(" ");
+  const autocompleteCommands = useMemo<RegisteredCommand[]>(() => {
+    if (input.trim() === "") return [];
 
-    if (commandName.trim() === "") return [];
+    const commandList =
+      findMatchingCommand(input, registeredCommands)?.commands ??
+      registeredCommands ??
+      [];
 
-    return registeredCommands
-      .filter((command) => command.name.startsWith(commandName.trim()))
+    return commandList
+      .filter((command) => command.fullName.startsWith(input.trim()))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [input]);
 
-  const runCommand = useCallback((command: Command, args: any) => {
+  const runCommand = useCallback((command: Command, input: string) => {
     const handlerArgs = {
-      args,
+      args: input.split(" ").slice(1),
       print: (text: string) =>
         setOutputs((outputs) => [...outputs, { text, type: "output" }]),
       clear: () => setOutputs([]),
     };
 
-    setOutputs((outputs) => [
-      ...outputs,
-      { text: command.name, type: "prompt" },
-    ]);
-    setCommandHistory((commands) => [...commands, command.name]);
+    setOutputs((outputs) => [...outputs, { text: input, type: "prompt" }]);
+    setCommandHistory((commands) => [...commands, input]);
     setInput("");
     setCursorPosition(0);
     setCommandHistoryIndex((i) => i + 1);
@@ -259,21 +286,24 @@ function Shell({ isFocused }: { isFocused: boolean }) {
 
   const attemptToRunCommand = useCallback(
     (input: string) => {
-      const [commandInput, ...args] = input.split(" ");
-
       const selectedAutocompleteCommand =
         autocompleteIndex !== false && autocompleteCommands[autocompleteIndex];
 
       if (selectedAutocompleteCommand) {
-        runCommand(selectedAutocompleteCommand, []);
+        runCommand(selectedAutocompleteCommand, input);
 
         return;
       }
 
-      // While we have non-flag arguments, check if the command is a subcommand
-      const findMatchingCommand = (input: string, commands: Command[]) => {
-        return commands.find((command) => command.name === input);
-      };
+      const matchingCommand = findMatchingCommand(input, registeredCommands);
+
+      if (matchingCommand) {
+        runCommand(matchingCommand, input);
+
+        return;
+      }
+
+      let [commandInput] = input.split(" ");
 
       switch (commandInput.trim()) {
         case "":
@@ -461,7 +491,7 @@ function Shell({ isFocused }: { isFocused: boolean }) {
                 <button
                   className={clsx(autocompleteIndex === index && "text-white")}
                   onClick={() => {
-                    runCommand(command, []);
+                    runCommand(command, command.fullName);
                   }}
                 >
                   {command.name}
@@ -473,6 +503,31 @@ function Shell({ isFocused }: { isFocused: boolean }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Given an input string and a list of commands, return the matching command.
+ * Note that commands may have a list of subcommands, so we need to recursively
+ * check those as well.
+ */
+function findMatchingCommand(
+  input: string,
+  commands: RegisteredCommand[],
+  previousCommand?: RegisteredCommand
+): RegisteredCommand | undefined {
+  const [firstWord, ...restWords] = input.trim().split(" ");
+
+  const command = commands.find((command) => command.name === firstWord);
+
+  if (!command) {
+    return previousCommand;
+  }
+
+  if (restWords.length === 0 || !command.commands?.length) {
+    return command;
+  }
+
+  return findMatchingCommand(restWords.join(" "), command.commands, command);
 }
 
 function Cursor({
