@@ -142,12 +142,20 @@ type Output = {
   type: "prompt" | "output";
 };
 
+type Flag = {
+  name: string;
+  description?: string;
+  char?: string;
+  type: "boolean" | "string";
+};
+
 type Command = {
   name: string;
   description: string;
   showInAutomplete?: boolean;
   handle: CommandHandler;
   commands?: Command[];
+  flags?: Flag[];
 };
 
 type RegisteredCommand = Command & {
@@ -156,6 +164,7 @@ type RegisteredCommand = Command & {
 };
 
 type CommandHandler = ({
+  flags,
   args,
   print,
   clear,
@@ -164,6 +173,10 @@ type CommandHandler = ({
    * The arguments passed to the command.
    */
   args: string[];
+  /**
+   * The flags passed to the command.
+   */
+  flags: Record<string, string | boolean>;
   /**
    * Prints the given text to the output.
    */
@@ -201,9 +214,30 @@ const registeredCommands = registerCommands([
   {
     name: "treats",
     description: "Gives you a treat",
-    handle({ print }) {
-      print("OK here is a treat");
+    handle({ print, flags }) {
+      if (flags.type) {
+        print(`Here is a ${flags.type} treat`);
+        return;
+      }
+
+      if (flags.all) {
+        print("Here is ALL the treats");
+      } else {
+        print("OK here is a treat");
+      }
     },
+    flags: [
+      {
+        name: "all",
+        description: "You get all the things",
+        type: "boolean",
+      },
+      {
+        name: "type",
+        description: "The type of treat",
+        type: "string",
+      },
+    ],
     commands: [
       {
         name: "cookie",
@@ -268,21 +302,27 @@ function Shell({ isFocused }: { isFocused: boolean }) {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [input]);
 
-  const runCommand = useCallback((command: Command, input: string) => {
-    const handlerArgs = {
-      args: input.split(" ").slice(1),
-      print: (text: string) =>
-        setOutputs((outputs) => [...outputs, { text, type: "output" }]),
-      clear: () => setOutputs([]),
-    };
+  const runCommand = useCallback(
+    (command: RegisteredCommand, input: string) => {
+      const { flags } = parseCommandInput(command, input);
 
-    setOutputs((outputs) => [...outputs, { text: input, type: "prompt" }]);
-    setCommandHistory((commands) => [...commands, input]);
-    setInput("");
-    setCursorPosition(0);
-    setCommandHistoryIndex((i) => i + 1);
-    command.handle(handlerArgs);
-  }, []);
+      const handlerArgs = {
+        args: input.split(" ").slice(1),
+        flags,
+        print: (text: string) =>
+          setOutputs((outputs) => [...outputs, { text, type: "output" }]),
+        clear: () => setOutputs([]),
+      };
+
+      setOutputs((outputs) => [...outputs, { text: input, type: "prompt" }]);
+      setCommandHistory((commands) => [...commands, input]);
+      setInput("");
+      setCursorPosition(0);
+      setCommandHistoryIndex((i) => i + 1);
+      command.handle(handlerArgs);
+    },
+    []
+  );
 
   const attemptToRunCommand = useCallback(
     (input: string) => {
@@ -528,6 +568,60 @@ function findMatchingCommand(
   }
 
   return findMatchingCommand(restWords.join(" "), command.commands, command);
+}
+
+/**
+ * Given a Command and an input string, return a set of arguments and flags.
+ *
+ * For example, given a command `ls` which has a Flag:
+ *
+ * { name: 'long', char: 'l', type: 'boolean' }
+ *
+ * With the input `ls -l`, this function would return `{ flags: { long: true } }`.
+ *
+ * Additionally, with the input `ls --long`, this function would return `{ flags: { long: true } }`.
+ *
+ * If a flag is not a boolean:
+ *
+ * { name: 'path', char: 'p', type: 'string' }
+ *
+ * And a value is passed to a flag, it will be included in the returned object. For example, with the input
+ * `ls -p /path/to/dir`, this function would return `{ flags: { path: '/path/to/dir' }`.
+ */
+function parseCommandInput(command: RegisteredCommand, input: string) {
+  const args = input.trim().split(/[ =]/);
+  const flags: Record<string, any> = {};
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg.startsWith("-")) {
+      const argWithoutDash = arg.replace(/-/g, "");
+      const flag = command.flags?.find((flag) => {
+        return flag.char === argWithoutDash || flag.name === argWithoutDash;
+      });
+
+      if (flag) {
+        if (flag.type === "boolean") {
+          flags[flag.name] = true;
+        } else {
+          let nextArg = args[i + 1];
+
+          if (!nextArg || nextArg.startsWith("-")) {
+            nextArg = "";
+          }
+
+          flags[flag.name] = nextArg;
+
+          if (!nextArg) i++;
+        }
+      }
+    } else {
+      // TODO: Support named args and parse them.
+    }
+  }
+
+  return { flags };
 }
 
 function Cursor({
