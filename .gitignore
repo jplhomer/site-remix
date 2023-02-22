@@ -4,6 +4,6 @@ node_modules
 .wrangler/state
 yarn-error.log
 .dev.vars
-# /build/*
-# !/build/index.d.ts
+/build/*
+!/build/index.d.ts
 /public/build
