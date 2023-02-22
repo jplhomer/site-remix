@@ -14,7 +14,7 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import { Layout } from "./components/Layout";
-import styles from "./tailwind.css";
+import styles from "./styles/tailwind.css";
 import syntax from "./styles/syntax.css";
 
 export const meta: MetaFunction = () => ({
