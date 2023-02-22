@@ -1,10 +1,9 @@
 node_modules
-
 /.cache
-/functions/\[\[path\]\].js
-/functions/\[\[path\]\].js.map
-/public/build
 .env
 .wrangler/state
 yarn-error.log
 .dev.vars
+/build/*
+!/build/index.d.ts
+/public/build
