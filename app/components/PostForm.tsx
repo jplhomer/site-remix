@@ -1,16 +1,7 @@
 import { Form, useActionData } from "@remix-run/react";
 import TextareaMarkdown from "textarea-markdown-editor";
+import type { Post } from "~/models/Post";
 import { Label, Input, ValidationError, Button } from "./Form";
-
-export interface Post {
-  id: number;
-  title: string;
-  content: string;
-  description: string;
-  slug: string;
-  status: string;
-  created_at: string;
-}
 
 export function PostForm({ post }: { post?: Post }) {
   const actionData = useActionData();
@@ -62,13 +53,13 @@ export function PostForm({ post }: { post?: Post }) {
         defaultValue={post?.description}
       />
 
-      <Label htmlFor="created_at">Date (optional)</Label>
+      <Label htmlFor="createdAt">Date (optional)</Label>
       <Input
         type="date"
-        name="created_at"
-        id="created_at"
+        name="createdAt"
+        id="createdAt"
         className="w-full"
-        defaultValue={post?.created_at}
+        defaultValue={post?.createdAt}
       />
 
       {isEdit && (

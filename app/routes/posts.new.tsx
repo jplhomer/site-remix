@@ -2,6 +2,7 @@ import type { ActionArgs, LoaderArgs } from "@remix-run/cloudflare";
 import { json, redirect } from "@remix-run/cloudflare";
 import { PostForm } from "~/components/PostForm";
 import { SimpleLayout } from "~/components/SimpleLayout";
+import { Post } from "~/models/Post";
 
 export async function loader({ request, context: { auth } }: LoaderArgs) {
   if (!(await auth.check())) {
@@ -16,7 +17,7 @@ export async function action({ request, context: { DB, auth } }: ActionArgs) {
   const title = form.get("title");
   const content = form.get("content");
   const description = form.get("description");
-  const createdAt = form.get("created_at");
+  const createdAt = form.get("createdAt");
   const userId = await auth.id();
 
   if (!title) {
@@ -33,27 +34,20 @@ export async function action({ request, context: { DB, auth } }: ActionArgs) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  const fields = [
-    "title",
-    "content",
-    "slug",
-    "status",
-    "description",
-    "user_id",
-  ];
-  const bindings = [title, content, slug, "draft", description, userId];
+  const post = new Post({
+    title,
+    content,
+    description,
+    slug,
+    userId,
+    status: "draft",
+  });
+
   if (createdAt) {
-    fields.push("created_at");
-    bindings.push(createdAt);
+    post.createdAt = createdAt;
   }
 
-  await DB.prepare(
-    `INSERT INTO posts (${fields.join(", ")}) VALUES (${fields
-      .map(() => "?")
-      .join(", ")})`
-  )
-    .bind(...bindings)
-    .run();
+  await post.save();
 
   return redirect(`/posts/${slug}`);
 }

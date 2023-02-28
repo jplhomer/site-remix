@@ -1,22 +1,22 @@
 import { json, type LoaderArgs } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
-import invariant from "tiny-invariant";
 import { Card } from "~/components/Card";
 import { SimpleLayout } from "~/components/SimpleLayout";
+import { Post } from "~/models/Post";
 import { formatDate } from "~/utils/date";
-import { type Post } from "./posts.$slug";
 
-export async function loader({ context: { DB, auth } }: LoaderArgs) {
+export async function loader({ context: { auth } }: LoaderArgs) {
   const isLoggedIn = await auth.check();
 
-  const where = isLoggedIn ? "" : "WHERE status = 'published'";
-  const posts = await DB.prepare(
-    `SELECT * FROM posts ${where} ORDER BY created_at DESC`
-  ).all<Post>();
+  const postsQuery = Post.query();
 
-  invariant(posts.results, "Something went wrong when querying posts.");
+  if (isLoggedIn) {
+    postsQuery.where("status", "published");
+  }
 
-  return json({ posts: posts.results });
+  const posts = await postsQuery.orderBy("createdAt", "desc");
+
+  return json({ posts });
 }
 
 export function meta() {
@@ -56,21 +56,21 @@ function Article({ post }: { post: Post }) {
         </Card.Title>
         <Card.Eyebrow
           as="time"
-          dateTime={post.created_at}
+          dateTime={post.createdAt}
           className="md:hidden"
           decorate
         >
-          {formatDate(post.created_at)}
+          {formatDate(post.createdAt)}
         </Card.Eyebrow>
         <Card.Description>{post.description}</Card.Description>
         <Card.Cta>Read post</Card.Cta>
       </Card>
       <Card.Eyebrow
         as="time"
-        dateTime={post.created_at}
+        dateTime={post.createdAt}
         className="mt-1 hidden md:block"
       >
-        {formatDate(post.created_at)}
+        {formatDate(post.createdAt)}
       </Card.Eyebrow>
     </article>
   );

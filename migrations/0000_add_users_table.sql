@@ -6,7 +6,7 @@ create table users (
   id integer primary key autoincrement,
   email text not null unique,
   password text not null,
-  email_verified_at datetime,
-  created_at datetime not null default current_timestamp,
-  updated_at datetime not null default current_timestamp
+  emailVerifiedAt datetime,
+  createdAt datetime not null default current_timestamp,
+  updatedAt datetime not null default current_timestamp
 );

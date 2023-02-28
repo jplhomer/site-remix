@@ -1,17 +1,19 @@
 import type { ActionArgs, LoaderArgs } from "@remix-run/cloudflare";
 import { json, redirect } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
-import { type Post, PostForm } from "~/components/PostForm";
+import invariant from "tiny-invariant";
+import { PostForm } from "~/components/PostForm";
 import { SimpleLayout } from "~/components/SimpleLayout";
+import { Post } from "~/models/Post";
 
-export async function loader({ params, context: { auth, DB } }: LoaderArgs) {
+export async function loader({ params, context: { auth } }: LoaderArgs) {
   if (!(await auth.check())) {
     return redirect("/auth/login");
   }
 
-  const post = await DB.prepare("SELECT * FROM posts WHERE slug = ?")
-    .bind(params.slug)
-    .first<Post>();
+  invariant(params.slug, "Missing slug param");
+
+  const post = await Post.where("slug", params.slug).first();
 
   return json({
     post,
@@ -21,16 +23,18 @@ export async function loader({ params, context: { auth, DB } }: LoaderArgs) {
 const badRequest = (error: string) => json({ error }, { status: 400 });
 
 export async function action({ request, params, context: { DB } }: ActionArgs) {
-  const post = await DB.prepare("SELECT id FROM posts WHERE slug = ?")
-    .bind(params.slug)
-    .first<{ id: number }>();
+  invariant(params.slug, "Missing slug param");
+  const post = await Post.where("slug", params.slug).first();
 
-  const postId = post?.id;
+  if (!post) {
+    return badRequest("Post not found");
+  }
+
   const form = new URLSearchParams(await request.text());
   const title = form.get("title");
   const content = form.get("content");
   const description = form.get("description");
-  const createdAt = form.get("created_at");
+  const createdAt = form.get("createdAt");
   const slug = form.get("slug");
   const status = form.get("status");
 
@@ -42,28 +46,18 @@ export async function action({ request, params, context: { DB } }: ActionArgs) {
     }
   }
 
-  const fields = ["title", "content", "slug", "status", "description"];
-  const bindings: Array<string | number | null> = [
+  await post.update({
     title,
     content,
+    description,
     slug,
     status,
-    description,
-  ];
+  });
+
   if (createdAt) {
-    fields.push("created_at");
-    bindings.push(createdAt);
+    post.createdAt = createdAt;
+    await post.save();
   }
-
-  bindings.push(postId);
-
-  await DB.prepare(
-    `UPDATE posts SET ${fields
-      .map((field) => field + " = ?")
-      .join(", ")} where id = ?`
-  )
-    .bind(...bindings)
-    .run();
 
   return redirect(`/posts/${slug}`);
 }

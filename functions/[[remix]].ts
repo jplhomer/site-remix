@@ -3,7 +3,7 @@ import {
   createCookieSessionStorage,
 } from "@remix-run/cloudflare";
 import { type AppLoadContext } from "@remix-run/server-runtime";
-import { config } from "superflare";
+import config from "../superflare.config";
 import { AuthService } from "~/services/auth.server";
 
 import * as build from "../build";
@@ -15,9 +15,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     remixHandler = createRequestHandler(build, ctx.env.ENVIRONMENT);
   }
 
-  config({
-    database: ctx.env.DB,
-  });
+  config(ctx);
 
   const sessionStorage = createCookieSessionStorage({
     cookie: {
@@ -43,10 +41,10 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   };
 
   const response = await remixHandler(ctx.request, loadContext);
-  response.headers.set(
-    "Set-Cookie",
-    await sessionStorage.commitSession(session)
-  );
+  // response.headers.set(
+  //   "Set-Cookie",
+  //   await sessionStorage.commitSession(session)
+  // );
 
   return response;
 };

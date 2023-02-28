@@ -8,8 +8,8 @@ export class Post extends Model {
   content?: string;
   description?: string;
   status!: string;
-  user_id!: number;
-  created_at!: string;
-  updated_at!: string;
+  userId!: number;
+  createdAt!: string;
+  updatedAt!: string;
   /* superflare-types-end */
 }
