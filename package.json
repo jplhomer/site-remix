@@ -6,9 +6,7 @@
     "predev": "remix build",
     "dev": "run-p \"dev:*\"",
     "dev:remix": "remix dev",
-    "dev:wrangler": "wrangler pages dev public --port 3000 -b ENVIRONMENT=development --d1=DB --local --persist",
-    "db:migrate:fresh": "rm .wrangler/state/d1/DB.sqlite3 && npx wrangler d1 migrations apply site-remix --local",
-    "migrate": "superflare migrate"
+    "dev:wrangler": "wrangler pages dev public --port 3000 -b ENVIRONMENT=development --d1=DB --local --persist"
   },
   "resolutions": {
     "@cloudflare/workers-types": "4.20230221.0"
