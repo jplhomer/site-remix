@@ -1,4 +1,4 @@
 [[ d1_databases ]]
 binding = "DB" # i.e. available in your Worker on env.DB
 database_name = "site-remix"
-database_id = "a43d04df-86ab-41e1-a8ad-e7c2f661e908"
+database_id = "83c3f7e3-b9c9-4d36-accd-1ac4edebabd7"
