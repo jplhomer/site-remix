@@ -15,6 +15,10 @@ export async function loader({ params, context: { auth } }: LoaderArgs) {
 
   const post = await Post.where("slug", params.slug).first();
 
+  if (!post) {
+    throw new Response("Not found", { status: 404 });
+  }
+
   return json({
     post,
   });

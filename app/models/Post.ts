@@ -1,15 +1,23 @@
 import { Model } from "superflare";
 
 export class Post extends Model {
-  /* superflare-types-start */
-  id!: number;
-  title!: string;
-  slug!: string;
+  toJSON(): PostRow {
+    return super.toJSON();
+  }
+}
+
+/* superflare-types-start */
+interface PostRow {
+  id: number;
+  title: string;
+  slug: string;
   content?: string;
   description?: string;
-  status!: string;
-  userId!: number;
-  createdAt!: string;
-  updatedAt!: string;
-  /* superflare-types-end */
+  status: string;
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export interface Post extends PostRow {}
+/* superflare-types-end */

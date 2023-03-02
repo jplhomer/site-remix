@@ -10,7 +10,7 @@ export async function loader({ context: { auth } }: LoaderArgs) {
 
   const postsQuery = Post.query();
 
-  if (isLoggedIn) {
+  if (!isLoggedIn) {
     postsQuery.where("status", "published");
   }
 

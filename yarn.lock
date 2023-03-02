@@ -7163,10 +7163,10 @@ style-to-object@^0.4.1:
   dependencies:
     inline-style-parser "0.1.1"
 
-superflare@^0.0.7:
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/superflare/-/superflare-0.0.7.tgz#5e963d6ec7b6ddd9e2898a6a166f00bb04bb4bfb"
-  integrity sha512-++7IycUc50YG7QH1T8G1NttgLaRsl65l/8KddRREdwZS7w/s0PnziAAQK0GqeugE/RTM88YHvGB4HxFWwgB7RA==
+superflare@^0.0.9:
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/superflare/-/superflare-0.0.9.tgz#cac2c8a83cd1a95f9cbe3004adc8bb11e8c93bac"
+  integrity sha512-STRBBdKQrdIn+dL9yKokWiMvy1PI4knCeRjMXgZ6qN0Xwk6U3xQ6j9VQiTMWkfj3u/GHKKiGLdZ373VaIR7O6A==
   dependencies:
     chalk "^4.1.2"
     cli-table3 "^0.6.3"

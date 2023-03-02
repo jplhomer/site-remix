@@ -22,7 +22,7 @@ export async function loader({ params, context: { auth } }: LoaderArgs) {
   return json({
     post: {
       ...post,
-      content: await convertToHtml(post.content),
+      content: await convertToHtml(post.content ?? ""),
     },
     isLoggedIn: await auth.check(),
   });

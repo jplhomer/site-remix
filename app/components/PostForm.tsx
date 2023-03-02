@@ -1,9 +1,10 @@
+import { type SerializeFrom } from "@remix-run/cloudflare";
 import { Form, useActionData } from "@remix-run/react";
 import TextareaMarkdown from "textarea-markdown-editor";
 import type { Post } from "~/models/Post";
 import { Label, Input, ValidationError, Button } from "./Form";
 
-export function PostForm({ post }: { post?: Post }) {
+export function PostForm({ post }: { post?: SerializeFrom<Post> }) {
   const actionData = useActionData();
   const isEdit = !!post;
 
